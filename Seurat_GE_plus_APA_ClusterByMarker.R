@@ -1,61 +1,6 @@
 
-
-# library(tidyverse)
-# library(RColorBrewer)
-# 
-# library(dplyr)
-# library(Seurat)
-# library(patchwork)
-# 
-# gene_full_name <- read.table("/wistar/tian/lwang/reference/gene_full_names + additional info.txt", header = T, sep = "\t", quote = "", na.strings = c("","NA"))
-# # gene_full_name <- gene_full_name[-c(1,2)]
-# gene_full_name <- gene_full_name %>% separate(gene_name, c("gene_name",NA),sep=",,")
-# gene_full_name <- gene_full_name[!duplicated(gene_full_name$gene_symbol), ]
-# 
-# id_convert <- read.table("/wistar/tian/lwang/reference/id convert.tbl", header = F, sep = "\t")
-# names(id_convert) <- c("gene_id","gene_symbol")
-# id_convert2 <- id_convert[!duplicated(id_convert), ]
-# 
-# 
-# 
-# 
-# dir.create(file.path("./", "Seurat"))
-# 
-# filenames <- list.files(paste0("./featureCounts"), pattern="*.featurecounts.Rmatrix.txt", full.names=TRUE)
-# filenames
-# ldf <- lapply(filenames, read.table,header = T)
-# names(ldf) <- substr(filenames,17,nchar(filenames)-26)
-# 
-# for (n in names(ldf)) {
-#   
-#   # n <- "SRR7424152"
-#   
-#   DF <- ldf[[n]]
-#   names(DF) <- c("gene_id",n)
-#   
-#   ldf[[n]] <- DF
-#   
-# }
-# 
-# GE <- Reduce(function(x, y) merge(x, y), c(list(id_convert2,gene_full_name),ldf))
-# GE_nonMT <- subset(GE, Chromosome != "MT")
-# GE2 <- GE_nonMT[-c(1,3:8)]
-# GE3 <- aggregate(. ~ gene_symbol, GE2, sum)
-# 
-# GE4 <- data.frame(GE3[-c(1)],row.names=GE3$gene_symbol)
-# 
-# # saveRDS(GE4, file=paste0("./Seurat/GE.RData"))
-# 
-# # write.csv(GE4, paste0("./Seurat/GE.csv"), row.names = T)
-
-
-
-
-
-
 library(tidyverse)
 library(RColorBrewer)
-
 library(dplyr)
 library(Seurat)
 library(patchwork)
@@ -64,10 +9,6 @@ library(scCustomize)
 GE4 <- readRDS(paste0("./Seurat/GE.RData"))
 
 ##### Setup the Seurat Object
-
-
-# # Load the PBS dataset
-# PBS.data <- Read10X(data.dir = "./filtered_feature_bc_matrix/")
 
 # Initialize the Seurat object with the raw (non-normalized data).
 SeuratObject <- CreateSeuratObject(counts = GE4, project = "GSE116237", min.cells = 3, min.features = 200)
@@ -137,38 +78,28 @@ DimHeatmap(SeuratObject, dims = 1, cells = 500, balanced = TRUE)
 
 ElbowPlot(SeuratObject)
 
-
-
 SeuratObject <- FindNeighbors(SeuratObject, dims = 1:15)
 SeuratObject <- FindClusters(SeuratObject, resolution = 0.5)
-
-
 
 SeuratObject <- RunUMAP(SeuratObject, dims = 1:15)
 
 DimPlot(SeuratObject, reduction = "umap")
 pA <- DimPlot(SeuratObject, reduction = "umap", cols = rep("lightgrey",6))
 
-
 SeuratObject.markers <- FindAllMarkers(SeuratObject, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
 x <- SeuratObject.markers %>%
   group_by(cluster) %>%
   slice_max(n = 4, order_by = avg_log2FC)
 
-
 p0 <- FeaturePlot(SeuratObject, features = x$gene)
 
 
-
-
-
-
-id_convert <- read.table("//cifs.wistar.upenn.edu/Tian/linux/lwang/reference/id convert.tbl", header = F, sep = "\t")
+id_convert <- read.table("id convert.tbl", header = F, sep = "\t")
 names(id_convert) <- c("gene_id","gene_symbol")
 id_convert2 <- id_convert[!duplicated(id_convert), ]
 id_convert3 <- id_convert2 %>% separate(gene_id, sep = "\\.", into = c("gene_id",NA), remove = T)
 
-signatures <- read.csv("//cifs.wistar.upenn.edu/Tian/linux/lwang/drive/project/Qiang/GSE116237/PIIS0092867418307931_signatures.csv", quote = "", na.strings = c("","NA"))
+signatures <- read.csv("/GSE116237/PIIS0092867418307931_signatures.csv", quote = "", na.strings = c("","NA"))
 
 
 
@@ -204,9 +135,6 @@ signatures <- read.csv("//cifs.wistar.upenn.edu/Tian/linux/lwang/drive/project/Q
 # # saveRDS(RE4, file=paste0("./Seurat/RE.RData"))
 # 
 # # write.csv(RE4, paste0("./Seurat/RE.csv"), row.names = T)
-
-
-
 
 
 
@@ -253,9 +181,6 @@ DefaultAssay(SeuratObject)
 DefaultAssay(SeuratObject) <- "APA"
 DefaultAssay(SeuratObject)
 
-# # Normalize ADT data,
-# cbmc <- NormalizeData(cbmc, normalization.method = "CLR", margin = 2, assay = "ADT")
-
 # Now, we will visualize GE and APA By setting the default assay, we can
 # visualize one or the other
 DefaultAssay(SeuratObject) <- "APA"
@@ -265,7 +190,6 @@ p2 <- FeaturePlot(SeuratObject, features = x$gene, cols = c("blue", "red")) + gg
 
 # # place plots side-by-side
 # p0 | p1 | p2
-
 
 
 
@@ -428,8 +352,6 @@ plot_grid(plotlist=c(plotListAPA4[c(7:8)]),ncol = 2,labels = names(plotListAPA4[
 
 
 SeuratObject@meta.data %>% head()
-
-
 
 
 p <- FeaturePlot_scCustom(seurat_object = SeuratObject, features = paste0(col), split.by = "timePoint", na_cutoff = NA) &
